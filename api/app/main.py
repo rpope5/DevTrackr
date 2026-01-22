@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .db import Base, engine
+
 from . import models  # noqa: F401
 from .routers.goals import router as goals_router
 
@@ -16,7 +16,7 @@ app.add_middleware(
 )
 
 # Create tables on startup (simple for now; later we’ll switch to Alembic migrations)
-Base.metadata.create_all(bind=engine)
+
 
 @app.get("/health")
 def health():
