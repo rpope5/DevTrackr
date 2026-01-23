@@ -79,7 +79,7 @@ export default function App() {
               <input
                 value={form.title}
                 onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="Ship DevTrackr MVP"
+                placeholder="Enter a goal title (e.g. Finish CS assignment)"
                 style={{ padding: 10, borderRadius: 10, border: "1px solid #ccc" }}
               />
               <small style={{ opacity: 0.7 }}>Minimum 3 characters.</small>
@@ -90,7 +90,7 @@ export default function App() {
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                placeholder="Goals + tasks + sessions"
+                placeholder="Optional details, steps, or notes for this goal"
                 rows={4}
                 style={{ padding: 10, borderRadius: 10, border: "1px solid #ccc", resize: "vertical" }}
               />
@@ -132,7 +132,7 @@ export default function App() {
           {loading ? (
             <p>Loading…</p>
           ) : goals.length === 0 ? (
-            <p>No goals yet. Create your first one.</p>
+            <p>No goals yet. Start by creating one on the left.</p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
               {goals.map((g) => (
