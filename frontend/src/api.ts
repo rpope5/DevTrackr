@@ -31,3 +31,32 @@ export async function createGoal(input: {
 
   return res.json();
 }
+
+export async function deleteGoal(goalId: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/goals/${goalId}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to delete goal: ${res.status} ${text}`);
+  }
+}
+
+export async function updateGoal(
+  goalId: number,
+  input: { title?: string; description?: string | null }
+): Promise<Goal> {
+  const res = await fetch(`${API_BASE_URL}/goals/${goalId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to update goal: ${res.status} ${text}`);
+  }
+
+  return res.json();
+}
