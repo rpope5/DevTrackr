@@ -18,3 +18,19 @@ class GoalOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class TaskCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+
+class TaskUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    is_done: bool | None = None
+
+class TaskOut(BaseModel):
+    id: int
+    goal_id: int
+    title: str
+    is_done: bool
+    created_at: datetime    
+    
+    model_config = ConfigDict(from_attributes=True)
+

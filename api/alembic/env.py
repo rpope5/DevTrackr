@@ -7,6 +7,14 @@ from alembic import context
 
 import os
 import sys
+from pathlib import Path
+config = context.config
+
+API_DIR = Path(__file__).resolve().parents[1]  # .../api
+DB_PATH = API_DIR / "devtrackr.db"
+config.set_main_option("sqlalchemy.url", f"sqlite:///{DB_PATH.as_posix()}")
+
+
 
 #Add the api/ directory to the sys.path sp "app" can be imported
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
