@@ -1,17 +1,20 @@
+from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# SQLite database file stored in api/ as devtrackr.db
-DATABASE_URL = "sqlite:///./devtrackr.db"
+API_DIR = Path(__file__).resolve().parents[1]  # points to .../api
+DB_PATH = API_DIR / "devtrackr.db"
+
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH.as_posix()}"
 
 engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},  # needed for SQLite with FastAPI
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 Base = declarative_base()
+
 
 
 def get_db():
