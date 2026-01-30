@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { createGoal, deleteGoal, fetchGoals, updateGoal } from "./api";
-import type { Goal } from "./api";
+import { createGoal, deleteGoal, fetchGoals, updateGoal, fetchTasks, createTask, updateTask, deleteTask, } from "./api";
+import type { Goal, Task } from "./api";
 
 type FormState = {
   title: string;
@@ -10,6 +10,15 @@ type FormState = {
 
 export default function App() {
   const [goals, setGoals] = useState<Goal[]>([]);
+
+  const [expandedGoalIds, setExpandedGoalIds] = useState<Set<number>>(new Set());
+
+  const [tasksByGoalId, setTasksByGoalId] = useState<Record<number, Task[]>>({});
+  const [tasksLoadingByGoalId, setTasksLoadingByGoalId] = useState<Record<number, boolean>>({});
+  const [tasksErrorByGoalId, setTasksErrorByGoalId] = useState<Record<number, string | null>>({});
+  const [newTaskTitleByGoalId, setNewTaskTitleByGoalId] = useState<Record<number, string>>({});
+
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -61,6 +70,101 @@ export default function App() {
       setLoading(false);
     }
   }
+
+  async function loadTasks(goalId: number) {
+  setTasksLoadingByGoalId((m) => ({ ...m, [goalId]: true }));
+  setTasksErrorByGoalId((m) => ({ ...m, [goalId]: null }));
+  try {
+    const tasks = await fetchTasks(goalId);
+    setTasksByGoalId((m) => ({ ...m, [goalId]: tasks }));
+  } catch (e) {
+    setTasksErrorByGoalId((m) => ({
+      ...m,
+      [goalId]: e instanceof Error ? e.message : "Failed to load tasks",
+    }));
+  } finally {
+    setTasksLoadingByGoalId((m) => ({ ...m, [goalId]: false }));
+  }
+}
+
+function toggleExpanded(goalId: number) {
+  setExpandedGoalIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(goalId)) {
+      next.delete(goalId);
+    } else {
+      next.add(goalId);
+      // lazy load tasks the first time we expand
+      if (!tasksByGoalId[goalId]) {
+        void loadTasks(goalId);
+      }
+    }
+    return next;
+  });
+}
+
+async function handleCreateTask(goalId: number) {
+  const title = (newTaskTitleByGoalId[goalId] ?? "").trim();
+  if (!title) return;
+
+  try {
+    const created = await createTask(goalId, { title });
+    setTasksByGoalId((m) => ({ ...m, [goalId]: [created, ...(m[goalId] ?? [])] }));
+    setNewTaskTitleByGoalId((m) => ({ ...m, [goalId]: "" }));
+  } catch (e) {
+    setTasksErrorByGoalId((m) => ({
+      ...m,
+      [goalId]: e instanceof Error ? e.message : "Failed to create task",
+    }));
+  }
+}
+
+async function handleToggleTaskDone(goalId: number, task: Task) {
+  // optimistic UI
+  setTasksByGoalId((m) => ({
+    ...m,
+    [goalId]: (m[goalId] ?? []).map((t) => (t.id === task.id ? { ...t, is_done: !t.is_done } : t)),
+  }));
+
+  try {
+    const updated = await updateTask(task.id, { is_done: !task.is_done });
+    setTasksByGoalId((m) => ({
+      ...m,
+      [goalId]: (m[goalId] ?? []).map((t) => (t.id === task.id ? updated : t)),
+    }));
+  } catch (e) {
+    // revert on failure
+    setTasksByGoalId((m) => ({
+      ...m,
+      [goalId]: (m[goalId] ?? []).map((t) => (t.id === task.id ? task : t)),
+    }));
+    setTasksErrorByGoalId((m) => ({
+      ...m,
+      [goalId]: e instanceof Error ? e.message : "Failed to update task",
+    }));
+  }
+}
+
+async function handleDeleteTask(goalId: number, taskId: number) {
+  // optimistic remove
+  const prev = tasksByGoalId[goalId] ?? [];
+  setTasksByGoalId((m) => ({
+    ...m,
+    [goalId]: (m[goalId] ?? []).filter((t) => t.id !== taskId),
+  }));
+
+  try {
+    await deleteTask(taskId);
+  } catch (e) {
+    // revert
+    setTasksByGoalId((m) => ({ ...m, [goalId]: prev }));
+    setTasksErrorByGoalId((m) => ({
+      ...m,
+      [goalId]: e instanceof Error ? e.message : "Failed to delete task",
+    }));
+  }
+}
+
 
   useEffect(() => {
     void loadGoals();
@@ -325,6 +429,82 @@ export default function App() {
                   <p style={{ margin: "10px 0 0 0", opacity: 0.6, fontSize: 12 }}>
                     Created: {new Date(g.created_at).toLocaleString()}
                   </p>
+                  <div style={{marginTop: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <strong>Tasks</strong>
+                      <button onClick={() => toggleExpanded(g.id)} style={btnStyle}>
+                        {expandedGoalIds.has(g.id) ? "Hide Tasks" : "Show Tasks"}
+                      </button>
+                    </div>
+
+                    {expandedGoalIds.has(g.id) && (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{display: "flex", gap: 8}}>
+                          <input
+                            value={newTaskTitleByGoalId[g.id] ?? ""}
+                            onChange={(e) =>
+                              setNewTaskTitleByGoalId((m) => ({ ...m, [g.id]: e.target.value }))
+                            }
+                            placeholder="Add a task for this goal..."
+                            style={{ flex: 1}}
+                          />
+                          <button
+                            onClick={() => void handleCreateTask(g.id)}
+                            className="btn"
+                            disabled={!(newTaskTitleByGoalId[g.id] ?? "").trim()}
+                          >
+                            Add 
+                          </button>
+                        </div>
+
+                        {tasksErrorByGoalId[g.id] && (
+                          <div style={{ marginTop: 8 }}>
+                          <small style={{color: "crimson"}}>{tasksErrorByGoalId[g.id]}</small>
+                          </div>
+                        )}
+
+                        <div style={{marginTop: 10 }}>
+                          {tasksLoadingByGoalId[g.id] ? (
+                            <small>Loading tasks…</small>
+                          ) : (tasksByGoalId[g.id] ?? []).length === 0 ? (
+                            <small>No tasks yet.</small>
+                          ) : (
+                            <ul style={{listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8}}>
+                              {(tasksByGoalId[g.id] ?? []).map((t) => (
+                                <li
+                                  key={t.id}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 10,
+                                    padding: "10px 12 px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(255,255,255,0.12)",
+                                  }}
+                                >
+                                  <label style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={t.is_done}
+                                      onChange={() => void handleToggleTaskDone(g.id, t)}
+                                    />
+                                    <span style={{ opacity: t.is_done ? 0.6 : 1, textDecoration: t.is_done ? "line-through" : "none" }}>
+                                      {t.title}
+                                    </span>
+                                  </label>
+
+                                  <button onClick={() => handleDeleteTask(g.id, t.id)} className="btn">
+                                    Delete
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
