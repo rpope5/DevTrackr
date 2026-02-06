@@ -8,14 +8,6 @@ export type Goal = {
   created_at: string;
 };
 
-export type Task = {
-  id: number;
-  goal_id: number;
-  title: string;
-  is_done: boolean;
-  created_at: string;
-};
-
 export async function fetchGoals(): Promise<Goal[]> {
   const res = await fetch(`${API_BASE_URL}/goals`);
   if (!res.ok) throw new Error(`Failed to fetch goals: ${res.status}`);
@@ -68,6 +60,14 @@ export async function updateGoal(
 
   return res.json();
 }
+
+export type Task = {
+  id: number;
+  goal_id: number;
+  title: string;
+  is_done: boolean;
+  created_at: string;
+};
 
 export async function fetchTasks(goalId: number): Promise<Task[]> {
   const res = await fetch(`${API_BASE_URL}/goals/${goalId}/tasks`);
