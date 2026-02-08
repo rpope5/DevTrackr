@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createGoal, deleteGoal, fetchGoals, updateGoal, fetchTasks, createTask, updateTask, deleteTask, } from "./api";
 import type { Goal, Task } from "./api";
+import { CheckCircle2, Circle, Trash2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+
 
 type FormState = {
   title: string;
@@ -17,6 +19,7 @@ export default function App() {
   const [tasksLoadingByGoalId, setTasksLoadingByGoalId] = useState<Record<number, boolean>>({});
   const [tasksErrorByGoalId, setTasksErrorByGoalId] = useState<Record<number, string | null>>({});
   const [newTaskTitleByGoalId, setNewTaskTitleByGoalId] = useState<Record<number, string>>({});
+
 
 
   const [loading, setLoading] = useState(true);
@@ -147,6 +150,8 @@ async function handleToggleTaskDone(goalId: number, task: Task) {
 
 async function handleDeleteTask(goalId: number, taskId: number) {
   // optimistic remove
+  const ok =window.confirm("Delete this task? This cannot be undone.");
+  if (!ok) return;
   const prev = tasksByGoalId[goalId] ?? [];
   setTasksByGoalId((m) => ({
     ...m,
@@ -234,6 +239,8 @@ async function handleDeleteTask(goalId: number, taskId: number) {
     }
   }
 
+  
+
   async function removeGoal(goalId: number) {
     const ok = window.confirm("Delete this goal? This cannot be undone.");
     if (!ok) return;
@@ -250,6 +257,7 @@ async function handleDeleteTask(goalId: number, taskId: number) {
       setBusyId(null);
     }
   }
+  
 
   return (
     <main
@@ -437,73 +445,115 @@ async function handleDeleteTask(goalId: number, taskId: number) {
                       </button>
                     </div>
 
-                    {expandedGoalIds.has(g.id) && (
-                      <div style={{ marginTop: 10 }}>
-                        <div style={{display: "flex", gap: 8}}>
-                          <input
-                            value={newTaskTitleByGoalId[g.id] ?? ""}
-                            onChange={(e) =>
-                              setNewTaskTitleByGoalId((m) => ({ ...m, [g.id]: e.target.value }))
-                            }
-                            placeholder="Add a task for this goal..."
-                            style={{ flex: 1}}
-                          />
-                          <button
-                            onClick={() => void handleCreateTask(g.id)}
-                            className="btn"
-                            disabled={!(newTaskTitleByGoalId[g.id] ?? "").trim()}
-                          >
-                            Add 
-                          </button>
-                        </div>
+                    {expandedGoalIds.has(g.id) && (() => {
+                      const tasks = tasksByGoalId[g.id] ?? [];
+                      const doneCount = tasks.filter((t) => t.is_done).length;
 
-                        {tasksErrorByGoalId[g.id] && (
-                          <div style={{ marginTop: 8 }}>
-                          <small style={{color: "crimson"}}>{tasksErrorByGoalId[g.id]}</small>
+                      const tasksSorted = [...tasks].sort((a, b) => {
+                        if (a.is_done !== b.is_done) return a.is_done ? 1 : -1;
+                        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                      });
+
+                      return (
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <strong>Tasks</strong>
+                              <span
+                                style={{
+                                  fontSize: 12,
+                                  padding: "2px 8px",
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(255,255,255,0.12)",
+                                  opacity: 0.85,
+                                }}
+                              >
+                                {doneCount}/{tasks.length} done
+                              </span>
+                            </div>
+
+                            <button onClick={() => toggleExpanded(g.id)} className="btn">
+                              Hide
+                            </button>
                           </div>
-                        )}
 
-                        <div style={{marginTop: 10 }}>
-                          {tasksLoadingByGoalId[g.id] ? (
-                            <small>Loading tasks…</small>
-                          ) : (tasksByGoalId[g.id] ?? []).length === 0 ? (
-                            <small>No tasks yet.</small>
-                          ) : (
-                            <ul style={{listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8}}>
-                              {(tasksByGoalId[g.id] ?? []).map((t) => (
-                                <li
-                                  key={t.id}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    gap: 10,
-                                    padding: "10px 12 px",
-                                    borderRadius: 10,
-                                    border: "1px solid rgba(255,255,255,0.12)",
-                                  }}
-                                >
-                                  <label style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={t.is_done}
-                                      onChange={() => void handleToggleTaskDone(g.id, t)}
-                                    />
-                                    <span style={{ opacity: t.is_done ? 0.6 : 1, textDecoration: t.is_done ? "line-through" : "none" }}>
-                                      {t.title}
-                                    </span>
-                                  </label>
+                          {/* keep your existing create-task input row here */}
+                          <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                            <input
+                              value={newTaskTitleByGoalId[g.id] ?? ""}
+                              onChange={(e) =>
+                                setNewTaskTitleByGoalId((m) => ({ ...m, [g.id]: e.target.value }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") void handleCreateTask(g.id);
+                             }}
+                             placeholder="Add a task for this goal…"
+                             style={{ flex: 1 }}
+                            />
+                            <button
+                              onClick={() => handleCreateTask(g.id)}
+                              className="btn"
+                              disabled={!(newTaskTitleByGoalId[g.id] ?? "").trim()}
+                            >
+                              Add
+                            </button>
+                          </div>
 
-                                  <button onClick={() => handleDeleteTask(g.id, t.id)} className="btn">
-                                    Delete
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
+                          {tasksErrorByGoalId[g.id] && (
+                            <div style={{ marginTop: 8 }}>
+                              <small style={{ color: "crimson" }}>{tasksErrorByGoalId[g.id]}</small>
+                            </div>
                           )}
+
+                          <div style={{ marginTop: 10 }}>
+                            {tasksLoadingByGoalId[g.id] ? (
+                              <small>Loading tasks…</small>
+                            ) : tasksSorted.length === 0 ? (
+                              <small>No tasks yet.</small>
+                            ) : (
+                              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
+                                {tasksSorted.map((t) => (
+                                  <li
+                                    key={t.id}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 10,
+                                      padding: "10px 12px",
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(255,255,255,0.12)",
+                                    }}
+                                  >
+                                    <label style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
+                                      <button
+                                        onClick={() => handleToggleTaskDone(g.id, t)}
+                                        className="iconBtn"
+                                        aria-label={t.is_done ? "Mark not done" : "Mark done"}
+                                      >
+                                        {t.is_done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                                      </button>
+                                      <span
+                                        style={{
+                                          opacity: t.is_done ? 0.6 : 1,
+                                          textDecoration: t.is_done ? "line-through" : "none",
+                                        }}
+                                      >
+                                        {t.title}
+                                      </span>
+                                    </label>
+
+                                    <button onClick={() => handleDeleteTask(g.id, t.id)} className="iconBtn">
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </li>
               ))}
