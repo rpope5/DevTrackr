@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createGoal, deleteGoal, fetchGoals, updateGoal, fetchTasks, createTask, updateTask, deleteTask, } from "./api";
 import type { Goal, Task } from "./api";
-import { CheckCircle2, Circle, Trash2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Circle, Trash2, Plus, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 
 
 type FormState = {
@@ -290,7 +290,7 @@ async function handleDeleteTask(goalId: number, taskId: number) {
           <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
             <label style={{ display: "grid", gap: 6 }}>
               <span>Title</span>
-              <input
+              <input className="input"
                 value={form.title}
                 onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                 placeholder="Enter a goal title (e.g. Finish CS assignment)"
@@ -307,7 +307,7 @@ async function handleDeleteTask(goalId: number, taskId: number) {
 
             <label style={{ display: "grid", gap: 6 }}>
               <span>Description (optional)</span>
-              <textarea
+              <textarea className="input"
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Optional details, steps, or notes for this goal"
@@ -342,8 +342,8 @@ async function handleDeleteTask(goalId: number, taskId: number) {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 style={{ marginTop: 0 }}>Goals</h2>
-            <button onClick={() => void loadGoals()} style={btnStyle}>
-              Refresh
+            <button className="btn" onClick={() => void loadGoals()}>
+              <RefreshCw size={16} /> Refresh
             </button>
           </div>
 
@@ -398,7 +398,7 @@ async function handleDeleteTask(goalId: number, taskId: number) {
 
                   {editingId === g.id ? (
                     <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                      <input
+                      <input className="input"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
                         style={{
@@ -409,7 +409,7 @@ async function handleDeleteTask(goalId: number, taskId: number) {
                           color: "inherit",
                         }}
                       />
-                      <textarea
+                      <textarea className="input"
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
                         rows={3}
@@ -440,8 +440,9 @@ async function handleDeleteTask(goalId: number, taskId: number) {
                   <div style={{marginTop: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <strong>Tasks</strong>
-                      <button onClick={() => toggleExpanded(g.id)} style={btnStyle}>
-                        {expandedGoalIds.has(g.id) ? "Hide Tasks" : "Show Tasks"}
+                      <button onClick={() => toggleExpanded(g.id)} className="btn">
+                        {expandedGoalIds.has(g.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        {expandedGoalIds.has(g.id) ? "Hide" : "Show"}
                       </button>
                     </div>
 
@@ -471,15 +472,11 @@ async function handleDeleteTask(goalId: number, taskId: number) {
                                 {doneCount}/{tasks.length} done
                               </span>
                             </div>
-
-                            <button onClick={() => toggleExpanded(g.id)} className="btn">
-                              Hide
-                            </button>
                           </div>
 
                           {/* keep your existing create-task input row here */}
                           <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                            <input
+                            <input className="input"
                               value={newTaskTitleByGoalId[g.id] ?? ""}
                               onChange={(e) =>
                                 setNewTaskTitleByGoalId((m) => ({ ...m, [g.id]: e.target.value }))
@@ -495,7 +492,7 @@ async function handleDeleteTask(goalId: number, taskId: number) {
                               className="btn"
                               disabled={!(newTaskTitleByGoalId[g.id] ?? "").trim()}
                             >
-                              Add
+                              <Plus size={16} /> Add
                             </button>
                           </div>
 
