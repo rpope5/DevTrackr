@@ -15,6 +15,12 @@ pids
 *.seed
 *.pid.lock
 
+# local debug
+api/inspect_db.py
+.vscode/
+*.db
+
+
 # SQLite database
 api/devtrackr.db
 
