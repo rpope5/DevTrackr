@@ -4,38 +4,39 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Goal, Task
 from ..schemas import TaskCreate, TaskOut, TaskUpdate
+from ..auth import get_current_user
+from ..models import Goal, Task, User
 
 router = APIRouter(tags=["tasks"])
 
 @router.get("/goals/{goal_id}/tasks", response_model=list[TaskOut])
-def list_tasks(goal_id: int, db: Session = Depends(get_db)):
-    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+def list_tasks(goal_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
 
-    tasks = (
+    return (
         db.query(Task)
-        .filter(Task.goal_id == goal_id)
+        .filter(Task.goal_id == goal_id, Task.user_id == current_user.id)
         .order_by(Task.created_at.desc())
         .all()
     )
-    return tasks
 
 @router.post("/goals/{goal_id}/tasks", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
-def create_task(goal_id: int, payload: TaskCreate, db: Session = Depends(get_db)):
-    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+def create_task(goal_id: int, payload: TaskCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
 
-    task = Task(goal_id=goal_id, title=payload.title, is_done=0)
+    task = Task(user_id=current_user.id, goal_id=goal_id, title=payload.title, is_done=0)
     db.add(task)
     db.commit()
     db.refresh(task)
     return task
 
 @router.put("/tasks/{task_id}", response_model=TaskOut)
-def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
+def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
@@ -49,8 +50,8 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     return task
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id: int, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
+def delete_task(task_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 

@@ -4,13 +4,15 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Goal
 from ..schemas import GoalCreate, GoalOut, GoalUpdate
+from ..auth import get_current_user
+from ..models import Goal, User
 
 router = APIRouter(prefix="/goals", tags=["goals"])
 
 
 @router.post("", response_model=GoalOut, status_code=status.HTTP_201_CREATED)
-def create_goal(payload: GoalCreate, db: Session = Depends(get_db)):
-    goal = Goal(title=payload.title, description=payload.description)
+def create_goal(payload: GoalCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = Goal(user_id=current_user.id, title=payload.title, description=payload.description)
     db.add(goal)
     db.commit()
     db.refresh(goal)
@@ -18,21 +20,27 @@ def create_goal(payload: GoalCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[GoalOut])
-def list_goals(db: Session = Depends(get_db)):
-    return db.query(Goal).order_by(Goal.created_at.desc()).all()
+def list_goals(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return (
+        db.query(Goal)
+        .filter(Goal.user_id == current_user.id)
+        .order_by(Goal.created_at.desc())
+        .all()
+    )
 
 
 @router.get("/{goal_id}", response_model=GoalOut)
-def get_goal(goal_id: int, db: Session = Depends(get_db)):
-    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+def get_goal(goal_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     return goal
 
 
 @router.put("/{goal_id}", response_model=GoalOut)
-def update_goal(goal_id: int, payload: GoalUpdate, db: Session = Depends(get_db)):
-    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+def update_goal(goal_id: int, payload: GoalUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
+
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
 
@@ -47,8 +55,8 @@ def update_goal(goal_id: int, payload: GoalUpdate, db: Session = Depends(get_db)
 
 
 @router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_goal(goal_id: int, db: Session = Depends(get_db)):
-    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+def delete_goal(goal_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
 

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers.goals import router as goals_router
 from .routers.tasks import router as tasks_router
 from . import models  # noqa: F401
+from .routers.auth import router as auth_router
 
 app = FastAPI(title="DevTrackr API", version="0.2.0")
 
@@ -17,6 +18,7 @@ app.add_middleware(
 
 app.include_router(goals_router)
 app.include_router(tasks_router)
+app.include_router(auth_router)
 
 @app.get("/health")
 def health():
