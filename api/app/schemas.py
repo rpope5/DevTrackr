@@ -47,4 +47,11 @@ class TaskOut(BaseModel):
     is_done: bool
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+    
+class UserOut(BaseModel):
+    id: int
+    email: str
+    created_at: datetime
 
+    class Config:
+        from_attributes = True
