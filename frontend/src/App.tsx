@@ -3,6 +3,14 @@ import { createGoal, deleteGoal, fetchGoals, updateGoal, fetchTasks, createTask,
 import type { Goal, Task } from "./api";
 import { CheckCircle2, Circle, Trash2, Plus, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 
+import {
+  getToken,
+  setToken,
+  registerUser,
+  loginUser,
+  fetchMe,
+  type User,
+} from "./api"
 
 type FormState = {
   title: string;
@@ -19,6 +27,13 @@ export default function App() {
   const [tasksLoadingByGoalId, setTasksLoadingByGoalId] = useState<Record<number, boolean>>({});
   const [tasksErrorByGoalId, setTasksErrorByGoalId] = useState<Record<number, string | null>>({});
   const [newTaskTitleByGoalId, setNewTaskTitleByGoalId] = useState<Record<number, string>>({});
+
+  const [user, setUser] = useState<User | null>(null);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
 
 
@@ -171,9 +186,27 @@ async function handleDeleteTask(goalId: number, taskId: number) {
 }
 
 
+  
+
   useEffect(() => {
-    void loadGoals();
-  }, []);
+  const token = getToken();
+  if (!token) return;
+
+  (async () => {
+    try {
+      const me = await fetchMe();
+      setUser(me);
+    } catch {
+      setToken(null);
+      setUser(null);
+    }
+  })();
+}, []);
+
+useEffect(() => {
+  if (!user) return;
+  void loadGoals();
+}, [user]);
 
   
   async function onSubmit(e: React.FormEvent) {
@@ -258,21 +291,112 @@ async function handleDeleteTask(goalId: number, taskId: number) {
     }
   }
   
-
+if (!user) {
   return (
-    <main
+    <main 
       style={{
         fontFamily: "system-ui",
         padding: 24,
         maxWidth: 980,
         margin: "0 auto",
       }}
-    >
+    className="appContainer">
+      <h1 style={{ marginBottom: 8 }}>DevTrackr</h1>
+      <p style={{ opacity: 0.8, marginTop: 0 }}>Sign in to manage your goals and tasks.</p>
+
+      <div style={{ display: "grid", gap: 10, maxWidth: 420 }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            className="btn"
+            onClick={() => { setAuthMode("login"); setAuthError(null); }}
+            disabled={authMode === "login"}
+          >
+            Login
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => { setAuthMode("register"); setAuthError(null); }}
+            disabled={authMode === "register"}
+          >
+            Register
+          </button>
+        </div>
+
+        <input
+          className="input"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          autoComplete="email"
+        />
+        <input
+          className="input"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          type="password"
+          autoComplete={authMode === "login" ? "current-password" : "new-password"}
+        />
+
+        {authError && <div style={{ color: "crimson" }}>{authError}</div>}
+
+        <button
+          className="btn"
+          disabled={authLoading || !email.trim() || !password}
+          onClick={async () => {
+            setAuthLoading(true);
+            setAuthError(null);
+            try {
+              if (authMode === "register") {
+                await registerUser({ email: email.trim(), password });
+              }
+              await loginUser({ email: email.trim(), password });
+              const me = await fetchMe();
+              setUser(me);
+            } catch (e) {
+              setAuthError(e instanceof Error ? e.message : "Auth failed");
+            } finally {
+              setAuthLoading(false);
+            }
+          }}
+        >
+          {authLoading ? "Working…" : authMode === "login" ? "Login" : "Register + Login"}
+        </button>
+      </div>
+    </main>
+  );
+}
+
+  return (
+    <main 
+      style={{
+        fontFamily: "system-ui",
+        padding: 24,
+        maxWidth: 980,
+        margin: "0 auto",
+      }}
+    className="appContainer">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+      <button
+        className="btn"
+        onClick={() => {
+        setToken(null);
+        setUser(null);
+      }}
+      > 
+        Logout
+      </button>
+</div>
       <header style={{ marginBottom: 16 }}>
         <h1 style={{ margin: 0, fontSize: 48 }}>DevTrackr</h1>
         <p style={{ marginTop: 6, opacity: 0.8 }}>
           Goals dashboard (React + FastAPI + SQLite + Alembic)
         </p>
+        <div>
+        <small style={{ opacity: 0.8 }}>Signed in as {user.email}</small>
+      </div>
       </header>
 
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16 }}>
@@ -459,7 +583,7 @@ async function handleDeleteTask(goalId: number, taskId: number) {
                         <div style={{ marginTop: 10 }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <strong>Tasks</strong>
+                              
                               <span
                                 style={{
                                   fontSize: 12,
