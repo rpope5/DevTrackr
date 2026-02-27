@@ -148,6 +148,12 @@ async function apiFetch(path: string, options: RequestInit = {}) {
     throw new Error(msg || `Request failed: ${res.status}`);
   }
 
+  if (res.status === 401) {
+    setToken(null);
+    // optional: force UI reset
+    window.location.reload();
+  }
+
   // Some endpoints might return empty body (204)
   const text = await res.text();
   return text ? JSON.parse(text) : null;
