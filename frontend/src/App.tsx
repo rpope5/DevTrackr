@@ -138,24 +138,34 @@ async function handleCreateTask(goalId: number) {
 }
 
 async function handleToggleTaskDone(goalId: number, task: Task) {
+  const nextDone = !task.is_done;
+
   // optimistic UI
   setTasksByGoalId((m) => ({
     ...m,
-    [goalId]: (m[goalId] ?? []).map((t) => (t.id === task.id ? { ...t, is_done: !t.is_done } : t)),
+    [goalId]: (m[goalId] ?? []).map((t) =>
+      t.id === task.id ? { ...t, is_done: nextDone } : t
+    ),
   }));
 
   try {
-    const updated = await updateTask(task.id, { is_done: !task.is_done });
+    const updated = await updateTask(task.id, { is_done: nextDone });
+
     setTasksByGoalId((m) => ({
       ...m,
-      [goalId]: (m[goalId] ?? []).map((t) => (t.id === task.id ? updated : t)),
+      [goalId]: (m[goalId] ?? []).map((t) =>
+        t.id === task.id ? { ...t, ...updated } : t
+      ),
     }));
   } catch (e) {
     // revert on failure
     setTasksByGoalId((m) => ({
       ...m,
-      [goalId]: (m[goalId] ?? []).map((t) => (t.id === task.id ? task : t)),
+      [goalId]: (m[goalId] ?? []).map((t) =>
+        t.id === task.id ? task : t
+      ),
     }));
+
     setTasksErrorByGoalId((m) => ({
       ...m,
       [goalId]: e instanceof Error ? e.message : "Failed to update task",
@@ -574,10 +584,9 @@ if (!user) {
                       const tasks = tasksByGoalId[g.id] ?? [];
                       const doneCount = tasks.filter((t) => t.is_done).length;
 
-                      const tasksSorted = [...tasks].sort((a, b) => {
-                        if (a.is_done !== b.is_done) return a.is_done ? 1 : -1;
-                        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                      });
+                      const tasksSorted = [...tasks].sort(
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                      );
 
                       return (
                         <div style={{ marginTop: 10 }}>

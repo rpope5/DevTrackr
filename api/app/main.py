@@ -8,6 +8,12 @@ from .routers.auth import router as auth_router
 
 app = FastAPI(title="DevTrackr API", version="0.2.0")
 
+allow_origins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://devtrackr.vercel.app",  # replace later
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
