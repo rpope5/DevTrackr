@@ -16,18 +16,14 @@ SECRET_KEY = os.getenv("DEVTRACKR_SECRET_KEY", "dev_only_change_me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("DEVTRACKR_TOKEN_MINUTES", "240"))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # tokenUrl must match your login endpoint
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def hash_password(password: str) -> str:
-    try:
-        return pwd_context.hash(password)
-    except ValueError as e:
-        # bcrypt throws ValueError if password > 72 bytes
-        raise HTTPException(status_code=400, detail=str(e))
+    return pwd_context.hash(password)
 
 
 
