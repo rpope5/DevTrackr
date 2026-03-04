@@ -20,9 +20,5 @@ A full stack app to track goals, tasks, and learning progress
 
 \## Status
 
-In progress. See docs/roadmap.md.
-
-
-
-\## Quick Start (coming soon)
+V1 Stable.
 
