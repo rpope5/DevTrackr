@@ -10,9 +10,7 @@ import sys
 from pathlib import Path
 config = context.config
 
-API_DIR = Path(__file__).resolve().parents[1]  # .../api
-DB_PATH = API_DIR / "devtrackr.db"
-config.set_main_option("sqlalchemy.url", f"sqlite:///{DB_PATH.as_posix()}")
+
 
 
 
@@ -23,6 +21,10 @@ sys.path.insert(0, BASE_DIR)
 
 from app.db import Base # noqa: E402
 from app import models # noqa: F401,E402
+
+from app.db import SQLALCHEMY_DATABASE_URL  # noqa: E402
+
+config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
