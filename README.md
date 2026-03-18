@@ -58,3 +58,18 @@ Infrastructure
 
 Status- V1 Stable.
 
+### Login Page
+![Login](screenshots/<img width="1920" height="1080" alt="login+register ui" src="https://github.com/user-attachments/assets/ed2d8436-111b-4653-b485-6cdf722b6001" />
+login.png)
+
+### Dashboard
+![Dashboard](screenshots/dashboard.p<img width="1920" height="1080" alt="main dashboard" src="https://github.com/user-attachments/assets/ee722d03-a4b0-40f7-a4b9-3e812b75fde7" />
+ng)
+
+### Goals
+![Goals](screenshots/<img width="1918" height="1020" alt="task under goal" src="https://github.com/user-attachments/assets/9cb50674-8f68-44c9-818d-eaba0c10c0b6" />
+goals.png)
+
+### Tasks
+![Tasks](screenshot<img width="1918" height="1021" alt="created goal" src="https://github.com/user-attachments/assets/fcaefd0f-1676-45b0-a447-76488c7a49dd" />
+s/admin.png)
